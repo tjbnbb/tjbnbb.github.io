@@ -1,4 +1,4 @@
-source 'https://rubygems.org'
+source 'https://gems.ruby-china.com'
 gem 'jekyll-paginate'
 gem 'jemoji'
 gem "jekyll", "~> 4.0"

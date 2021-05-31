@@ -5,7 +5,7 @@ header-img: img/home-bg.jpg
 email: jibintang8@gmail.com
 description: "个人IT技术博客，和你一起学习"
 keyword: "学习, study, IT, computer, student, 大学生, tech, Blog, 湖南大学, HNU"
-url: ""              # your host, for absolute URL
+url: "https://tjbnbb.github.io/"              # your host, for absolute URL
 baseurl: ""                             # for example, '/blog' if your blog hosted on 'host/blog'
 
 # Publish posts or collection documents with a future date.
@@ -27,7 +27,7 @@ facebook_username:  jibin.tang.1
 highlighter: rouge
 permalink: pretty
 paginate: 5
-exclude: ["less","node_modules","Gruntfile.js","package.json","README.md","README.zh.md"]
+exclude: ["less","node_modules","Gruntfile.js","package.json","README.md"]
 anchorjs: true                          # if you want to customize anchor. check out line:181 of `post.html`
 # If you have timezone issue (e.g. #68) in China, uncomment to use this:
 #timezone: CN  
@@ -41,7 +41,6 @@ anchorjs: true                          # if you want to customize anchor. check
 plugins:
   - jekyll-paginate
   - jemoji
-
 
 
 # Markdown settings
@@ -98,7 +97,7 @@ service-worker: true
 
 
 # MathJax rendering for layout:page (e.g. post preview)
-page-mathjax: false
+page-mathjax: true
 
 
 
