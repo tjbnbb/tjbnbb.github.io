@@ -69,11 +69,11 @@ netease_comment: false
 
 # Analytics settings
 # Baidu Analytics 
-# ba_track_id: [your track id]
+ba_track_id: 7658fcc854a0b911b7987b526bebc5f2
 
 # Google Analytics
-ga_track_id: 'UA-49627206-1'            # Format: UA-xxxxxx-xx
-ga_domain: huangxuan.me
+ga_track_id: 'G-7T5JZN6EXP'            # Format: UA-xxxxxx-xx
+ga_domain: tjbnbb.github.io
 
 
 
@@ -93,11 +93,6 @@ featured-condition-size: 1              # A tag will be featured if the size of 
 # Progressive Web Apps
 chrome-tab-theme-color: "#000000"
 service-worker: true
-
-
-
-# MathJax rendering for layout:page (e.g. post preview)
-page-mathjax: true
 
 
 

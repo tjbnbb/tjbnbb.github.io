@@ -20,9 +20,8 @@
 
 </body>
 
-</html>
-
-{\% if page.mermaid \%}
+<!-- add support for mermaid-->
+{% if page.mermaid %}
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/7.1.0/mermaid.min.js"></script>
         <script>
             var config = {
@@ -52,4 +51,6 @@
                 }
             });
         </script>
-{\% endif \%}
+{% endif %}
+
+</html>
