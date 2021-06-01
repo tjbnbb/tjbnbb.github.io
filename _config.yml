@@ -71,11 +71,7 @@ netease_comment: false
 # Baidu Analytics 
 ba_track_id: 7658fcc854a0b911b7987b526bebc5f2
 
-# Google Analytics
-ga_track_id: 'G-7T5JZN6EXP'            # Format: UA-xxxxxx-xx
-ga_domain: tjbnbb.github.io
-
-
+# Google Analytics,默认添加，想关掉或替换可去foot.html操作
 
 # Sidebar settings
 sidebar: true                           # whether or not using Sidebar.
