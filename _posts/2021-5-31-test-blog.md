@@ -1,7 +1,7 @@
 ---
 layout: post
-title: "测试 jekyll 博客"
-subtitle: 'test jekyll blog'
+title: "测试 markdown 语法是否齐全"
+subtitle: 'Test whether the markdown syntax is complete'
 author: "Tang Jibin"
 header-img: img/404-bg.jpg #不需要加图片就用 header-img: text
 header-img-credit: CG #在图片右下角加 credit
