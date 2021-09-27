@@ -3,7 +3,7 @@ layout: post
 title: "编程新技术实务1"
 subtitle: '使用 SpringBoot 框架中的 mybatis 操作数据库'
 author: "Tang Jibin"
-header-img: img/in-post/header/2021-9-27-code-blog.jpg #不需要加图片就用 header-img: text
+header-img: img/header/2021-9-27-code-blog.jpg #不需要加图片就用 header-img: text
 #header-img-credit: CG #在图片右下角加 credit
 header-mask: 0.5 #表示图片的阴影指数，只在标题加图片才需要
 hidden: true
