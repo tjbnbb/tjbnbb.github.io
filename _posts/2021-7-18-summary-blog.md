@@ -3,7 +3,7 @@ layout: post
 title: "大二总结和未来规划"
 subtitle: 'Sophomore summary and future planning'
 author: "Tang Jibin"
-header-img: img/in-post/2021-7-18-summary-blog.jpg #不需要加图片就用 header-img: text
+header-img: img/in-post/header/2021-7-18-summary-blog.jpg #不需要加图片就用 header-img: text
 #header-img-credit: CG #在图片右下角加 credit
 header-mask: 0.5 #表示图片的阴影指数，只在标题加图片才需要
 hidden: false

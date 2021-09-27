@@ -1,0 +1,651 @@
+---
+layout: post
+title: "编程新技术实务1"
+subtitle: '使用 SpringBoot 框架中的 mybatis 操作数据库'
+author: "Tang Jibin"
+header-img: img/in-post/2021-9-27-code-blog.jpg #不需要加图片就用 header-img: text
+#header-img-credit: CG #在图片右下角加 credit
+header-mask: 0.5 #表示图片的阴影指数，只在标题加图片才需要
+hidden: true
+mathjax: false
+mermaid: false
+tags:
+  - Java
+  - MySQL
+---
+
+### 前言
+
+这次实验应该是很老的实验了，毕竟在实验文档里使用的还是 JDK7，并且还是把 Eclipse 作为 IDE 的，使用的 MySQL 的版本也十分的旧了。既然是过时的东西我们为什么一定要按照他的来呢？所以我在这里使用的 IDE 是 IDEA （有条件的可以支持一下正版，没有条件的可以去网上找破解方法，一大堆）。并且在实验文档中有提到使用 JDBC 来连接数据库，但是我在这里会直接使用 Springboot 框架中带的 mybatis 进行操作（注：最开始我已经用 JDBC 完成了，但是了解到现在有很多更方便的东西，所以打算使用 SpringBoot 框架再做一次）
+
+### 实验内容
+
+实验内容很简单，其实就是让你可以通过 Java 编程来连接数据库，然后对数据库进行操作
+
+1. 创建数据库表 users ，字段分别为username(主键，varchar(10))、pass(varchar(8))；数据库表 person ，字段按分别为username(varchar(10)，对应于 users 表的username)、name(主键，varchar(20))、age(int，可以为空)、teleno(char(11)，可以为空)；表 users 中没有的 username ，表 person 中也不能有相应的 username 的数据。
+
+2. 在表 users 中插入4行数据，数据分别是(ly,123456)、(liming,345678)、(test, 11111)、(test1,12345)，在表 person 中插入3行数据，数据分别为(ly,雷力)、(liming,李明,25)、(test,测试用户,20,13388449933)；
+
+3. 在 person 表中插入5行数据，分别为(ly,王五)、(test2,测试用户2)、(test1,测试用户1,33)、(test,张三,23,18877009966)、(admin,admin)。对于表中已有的username，则根据最新的数据修改其相应字段值；如该username不存在，则首先在表 users 中插入该 username ，默认的 password 为888888，然后才能将数据插入至 person 表。
+4. 删除 users 表中 test 打头的 username ，同时按照规则一并删除 person 表相应的数据。
+
+最后要求每次操作后都要在控制台打印出表 users 和表 person
+
+### 实验过程
+
+#### 步骤一
+
+首先使用 IDEA 创建一个 SpringBoot 项目框架
+![](/img/in-post/2021-9-27-code-blog/2021-9-27-1.png)
+
+然后勾选右下角所示的依赖（实验一并不需要这么多，为后面的实验二做准备的）
+![](/img/in-post/2021-9-27-code-blog/2021-9-27-2.png)
+
+然后就会创建一个初始的 SpringBoot 框架了
+
+接着我们可以创建几个目录结构，让项目的条理更加清晰
+![](/img/in-post/2021-9-27-code-blog/2021-9-27-3.png)
+SpringBoot项目大概分为四层：
+
+1. Mapper 层：包括 XxxMapper.java (数据库访问接口类)， XxxMapper.xml (数据库链接实现)；（这个命名，有人喜欢用Dao命名，有人喜欢用 Mapper ，看个人习惯了吧）
+2. Bean 层：也叫 model 层，模型层， entity 层，实体层，就是数据库表的映射实体类，存放 POJO 对象；
+3. Service 层：也叫服务层，业务层，包括 XxxService.java (业务接口类)， XxxServiceImpl.java （业务实现类）；（可以在 service 文件夹下新建 impl 文件放业务实现类，也可以把业务实现类单独放一个文件夹下，更清晰）
+4. Controller 层：也叫做 Web 层，实现与 web 前端的交互。
+
+#### 步骤二
+
+创建好框架建好目录后就要加入一些配置信息了
+
+在 application.yml 写入
+
+```yml
+spring:
+  datasource:
+    name: tjb  #数据库名
+    url: jdbc:mysql://localhost:3306/tjb?serverTimezone=GMT%2B8&useUnicode=true&characterEncoding=utf-8 #url
+    username: root  #用户名
+    password: ******  #密码
+    driver-class-name: com.mysql.cj.jdbc.Driver  #JDBC驱动
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml  #配置映射文件
+  type-aliases-package: com.tjb.lab1.bean #配置实体类
+```
+
+然后在 pow.xml 配置文件里可能会报错，需要在报错的 maven 插件中写下其版本，如下，至于什么版本的可以自己找
+
+```xml
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-maven-plugin</artifactId>
+            <version>2.5.5</version>
+        </plugin>
+    </plugins>
+</build>
+```
+
+#### 步骤三
+
+配置好以后，接下来就开始真正的编程了
+
+首先是 bean 软件包下的实体类的编写
+
+UersBean.java：
+```java
+public class UsersBean {
+    private String username;//主键
+    private String pass;
+
+    public UsersBean(String username,String pass) {
+        this.username=username;
+        this.pass=pass;
+    }
+
+    public String getusername() {
+        return username;
+    }
+
+    public String getpass() { return pass; }
+
+    public void setusername(String username) {
+        this.username = username;
+    }
+
+    public void setpass(String pass) {
+        this.pass = pass;
+    }
+}
+```
+
+PersonBean.java：
+
+```java
+package com.tjb.lab.bean;
+
+public class PersonBean {
+    private String username;
+    private String name;//主键
+    private Integer age;
+    private String teleno;
+
+    public PersonBean(String username, String name, Integer age, String teleno){
+        this.username = username;
+        this.name = name;
+        this.age = age;
+        this.teleno = teleno;
+    }
+
+    public PersonBean(String username,String name){
+        this(username,name,null,"");
+    }
+
+    public PersonBean(String username,String name,Integer age){
+        this(username,name,age,"");
+    }
+
+    public String getUsername(){
+        return username;
+    }
+
+    public String getName(){
+        return name;
+    }
+
+    public Integer getAge(){
+        return age;
+    }
+
+    public String getTeleno(){
+        return teleno;
+    }
+
+    public void setUsername(String username){
+        this.username = username;
+    }
+
+    public void setName(String name){ this.name = name; }
+
+    public void setAge(Integer age){
+        this.age = age;
+    }
+
+    public void setTeleno(String teleno){
+        this.teleno = teleno;
+    }
+}
+
+```
+
+然后编写 Mapper 软件包下的接口文件
+
+UsersMapper.java：
+```java
+package com.tjb.lab.mapper;
+
+import com.tjb.lab.bean.UsersBean;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
+@Mapper
+public interface UsersMapper {
+    int createUserstable();
+
+    int insertUsers(UsersBean usersBean);
+
+    int deleteUsers(String usersname);
+
+    int updateUsers(UsersBean usersBean);
+
+    List<UsersBean> getUsers(String usersname);
+
+    List<UsersBean> getAllUsers();
+
+    int dropUserstable();
+}
+```
+
+PersonMapper.java：
+```java
+package com.tjb.lab.mapper;
+
+import com.tjb.lab.bean.PersonBean;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
+@Mapper
+public interface PersonMapper {
+    int createPersontable();
+
+    int insertPerson(PersonBean personBean);
+
+    int deletePerson(String usersname);
+
+    int updatePerson(PersonBean personBean);
+
+    List<PersonBean> getPerson(String usersname);
+
+    List<PersonBean> getAllPerson();
+
+    int dropPersontable();
+}
+
+```
+
+接着在 resource 目录下的 mapper 目录下编写 xml 映射文件实现接口类函数
+
+UsersMapper.xml：
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.tjb.lab.mapper.UsersMapper">
+
+    <update id="createUserstable" >
+        CREATE TABLE IF NOT EXISTS users (
+        username varchar(10) NOT NULL,
+        pass varchar(8) NOT NULL,
+        PRIMARY KEY (username));
+    </update>
+
+    <!--插入新用户信息,返回数据库操作影响行数，为0则是失败-->
+    <insert id="insertUsers" parameterType="com.tjb.lab.bean.UsersBean">
+        INSERT INTO users
+        values (#{username},#{pass});
+    </insert>
+
+    <!--根据username删除用户，返回数据库操作影响行数，为0则是失败-->
+    <delete id="deleteUsers" parameterType="String">
+        DELETE FROM users
+        WHERE username like #{username};
+    </delete>
+
+    <!--根据username修改用户信息，返回数据库操作影响行数，为0则是失败-->
+    <update id="updateUsers" parameterType="com.tjb.lab.bean.UsersBean">
+        UPDATE users
+        SET pass = #{pass}
+        WHERE username = #{username};
+    </update>
+
+    <!--查询指定用户名信息，返回一个List<Bean-->
+    <select id="getUsers" parameterType="String" resultType="com.tjb.lab.bean.UsersBean">
+        SELECT * FROM users WHERE username = #{username};
+    </select>
+
+    <!--查询所有用户信息，返回一个List<Bean>-->
+    <select id="getAllUsers" resultType="com.tjb.lab.bean.UsersBean">
+        SELECT * FROM users ;
+    </select>
+
+    <update id="dropUserstable" >
+        DROP TABLE IF EXISTS users;
+    </update>
+
+</mapper>
+```
+
+PersonMapper.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.tjb.lab.mapper.PersonMapper">
+
+    <update id="createPersontable" >
+        CREATE TABLE IF NOT EXISTS person (
+        username varchar(10) NOT NULL,
+        name varchar(20) NOT NULL,
+        age int,
+        teleno char(11),
+        PRIMARY KEY (username));
+    </update>
+
+    <!--插入新用户信息,返回数据库操作影响行数，为0则是失败-->
+    <insert id="insertPerson" parameterType="com.tjb.lab.bean.PersonBean">
+        INSERT INTO person
+        values (#{username},#{name},#{age},#{teleno});
+    </insert>
+
+    <!--根据ID删除用户，返回数据库操作影响行数，为0则是失败-->
+    <delete id="deletePerson" parameterType="String">
+        DELETE FROM person
+        WHERE username like #{username};
+    </delete>
+
+    <!--根据ID修改用户信息，返回数据库操作影响行数，为0则是失败-->
+    <update id="updatePerson" parameterType="com.tjb.lab.bean.PersonBean">
+        UPDATE person
+        SET name = #{name},
+            age = #{age},
+            teleno = #{teleno}
+        WHERE username = #{username};
+    </update>
+
+    <!--查询指定用户名信息，返回一个List<Bean-->
+    <select id="getPerson" parameterType="String" resultType="com.tjb.lab.bean.PersonBean">
+        SELECT * FROM person WHERE username = #{username};
+    </select>
+
+    <!--查询所有用户信息，返回一个List<Bean>-->
+    <select id="getAllPerson" resultType="com.tjb.lab.bean.PersonBean">
+        SELECT * FROM person ;
+    </select>
+
+    <update id="dropPersontable" >
+        DROP TABLE person ;
+    </update>
+
+</mapper>
+```
+
+要怎么实现实验要求的，对数据库进行操作呢，我们可以再 test 目录下的软件包内再新建一个包，命名为 lab1 ，然后可以把每一步和打印表当作普通类进行编写，之后在利用 SpringBoot 的 test 对其调用即可实现
+
+Printer.java：
+
+```java
+package com.tjb.lab.lab1;
+
+import com.tjb.lab.bean.UsersBean;
+import com.tjb.lab.bean.PersonBean;
+import com.tjb.lab.mapper.PersonMapper;
+import com.tjb.lab.mapper.UsersMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import javax.annotation.PostConstruct;
+import java.util.List;
+
+@Component
+public class Printer {
+
+    @Autowired
+    private UsersMapper usersMapper;
+
+    @Autowired
+    private PersonMapper personMapper;
+
+    public static Printer printer;
+
+    @PostConstruct
+    public void init() {
+        printer = this;
+        printer.usersMapper = this.usersMapper;
+        printer.personMapper = this.personMapper;
+    }
+
+    public void PrintUsers() {
+        List<UsersBean> users = printer.usersMapper.getAllUsers();
+        System.out.println("\n表users：");
+        System.out.println("+===============================================+");
+        System.out.format("|%-20s\t|%-20s\t|\n","username","pass");
+        System.out.println("+===============================================+");
+        for(UsersBean usersBean:users) {
+            System.out.format("|%-20s\t|%-20s\t|\n",usersBean.getusername(),usersBean.getpass());
+            System.out.println("-------------------------------------------------");
+        }
+    }
+
+    public void PrintPerson() {
+        List<PersonBean> person = printer.personMapper.getAllPerson();
+        System.out.println("\n表person：");
+        System.out.println("+===============================================" +
+                "================================================+");
+        System.out.format("|%-20s\t|%-20s\t|%-20s\t|%-20s\t|\n","username","name","age","teleno");
+        System.out.println("+===============================================" +
+                "================================================+");
+        for(PersonBean personBean:person) {
+            System.out.format("|%-20s\t|%-20s\t|%-20s\t|%-20s\t|\n",
+                    personBean.getUsername(),personBean.getName(),personBean.getAge(),personBean.getTeleno());
+            System.out.println("------------------------------------------------" +
+                    "-------------------------------------------------");
+        }
+    }
+}
+```
+
+FirstStep.java
+```java
+package com.tjb.lab.lab1;
+
+import com.tjb.lab.mapper.PersonMapper;
+import com.tjb.lab.mapper.UsersMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+
+@Component
+public class FirstStep {
+
+    @Autowired
+    private UsersMapper usersMapper;
+
+    @Autowired
+    private PersonMapper personMapper;
+
+    @Autowired
+    private Printer printer;
+
+    public static FirstStep firstStep;
+
+    @PostConstruct
+    public void init() {
+        firstStep = this;
+        firstStep.usersMapper = this.usersMapper;
+        firstStep.personMapper = this.personMapper;
+        firstStep.printer = this.printer;
+    }
+
+    public void First() {
+        firstStep.usersMapper.dropUserstable();
+        firstStep.personMapper.dropPersontable();
+        firstStep.usersMapper.createUserstable();
+        firstStep.personMapper.createPersontable();
+        System.out.println("\n执行第一步：");
+        firstStep.printer.PrintUsers();
+        firstStep.printer.PrintPerson();
+    }
+}
+```
+
+SecondStep.java：
+```java
+package com.tjb.lab.lab1;
+
+import com.tjb.lab.bean.PersonBean;
+import com.tjb.lab.bean.UsersBean;
+import com.tjb.lab.mapper.PersonMapper;
+import com.tjb.lab.mapper.UsersMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+
+@Component
+public class SecondStep {
+
+    @Autowired
+    private UsersMapper usersMapper;
+
+    @Autowired
+    private PersonMapper personMapper;
+
+    @Autowired
+    private Printer printer;
+
+    public static SecondStep secondStep;
+
+    @PostConstruct
+    public void init() {
+        secondStep = this;
+        secondStep.usersMapper = this.usersMapper;
+        secondStep.personMapper = this.personMapper;
+        secondStep.printer = this.printer;
+    }
+
+    public void Second() {
+        secondStep.usersMapper.insertUsers(new UsersBean("ly","123456"));
+        secondStep.usersMapper.insertUsers(new UsersBean("liming","345678"));
+        secondStep.usersMapper.insertUsers(new UsersBean("test","11111"));
+        secondStep.usersMapper.insertUsers(new UsersBean("test1","12345"));
+        secondStep.personMapper.insertPerson(new PersonBean("test1","12345"));
+        secondStep.personMapper.insertPerson(new PersonBean("liming","李明",25));
+        secondStep.personMapper.insertPerson(new PersonBean("test","测试用户",20,"13388449933"));
+        System.out.println("\n执行第二步：");
+        secondStep.printer.PrintUsers();
+        secondStep.printer.PrintPerson();
+    }
+}
+```
+
+ThirdStep.java：
+```java
+package com.tjb.lab.lab1;
+
+import com.tjb.lab.bean.PersonBean;
+import com.tjb.lab.bean.UsersBean;
+import com.tjb.lab.mapper.PersonMapper;
+import com.tjb.lab.mapper.UsersMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.util.List;
+
+@Component
+public class ThirdStep {
+    @Autowired
+    private UsersMapper usersMapper;
+
+    @Autowired
+    private PersonMapper personMapper;
+
+    @Autowired
+    private Printer printer;
+
+    public static ThirdStep thirdStep;
+
+    @PostConstruct
+    public void init() {
+        thirdStep = this;
+        thirdStep.usersMapper = this.usersMapper;
+        thirdStep.personMapper = this.personMapper;
+        thirdStep.printer = this.printer;
+    }
+
+    public void Third() {
+        modify(new PersonBean("ly","王五"));
+        modify(new PersonBean("test2","测试用户 2"));
+        modify(new PersonBean("test1","测试用户 1",33));
+        modify(new PersonBean("test","张三",23,"18877009966"));
+        modify(new PersonBean("admin","admin"));
+        System.out.println("\n执行第三步：");
+        thirdStep.printer.PrintUsers();
+        thirdStep.printer.PrintPerson();
+    }
+
+    public void modify(PersonBean personBean) {
+        String username = personBean.getUsername();
+        List<UsersBean> users = thirdStep.usersMapper.getUsers(username);
+        List<PersonBean> person = thirdStep.personMapper.getPerson(username);
+        if(users.isEmpty()) {
+            thirdStep.usersMapper.insertUsers(new UsersBean(username,"888888"));
+        }
+        else {
+            if(person.isEmpty()) {
+                thirdStep.personMapper.insertPerson(personBean);
+            }
+            else {
+                thirdStep.personMapper.updatePerson(personBean);
+            }
+        }
+    }
+}
+```
+
+FourthStep
+```java
+package com.tjb.lab.lab1;
+
+import com.tjb.lab.mapper.PersonMapper;
+import com.tjb.lab.mapper.UsersMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+
+@Component
+public class FourthStep {
+    @Autowired
+    private UsersMapper usersMapper;
+
+    @Autowired
+    private PersonMapper personMapper;
+
+    @Autowired
+    private Printer printer;
+
+    public static FourthStep fourthStep;
+
+    @PostConstruct
+    public void init() {
+        fourthStep = this;
+        fourthStep.usersMapper = this.usersMapper;
+        fourthStep.personMapper = this.personMapper;
+        fourthStep.printer = this.printer;
+    }
+
+    public void Fourth() {
+        fourthStep.usersMapper.deleteUsers("test%");
+        fourthStep.personMapper.deletePerson("test%");
+        System.out.println("\n执行第四步：");
+        fourthStep.printer.PrintUsers();
+        fourthStep.printer.PrintPerson();
+    }
+}
+```
+
+最后，我们再在 test 目录下的软件包编写类实现实验一的功能
+
+Lab1Test.java
+```java
+package com.tjb.lab;
+
+import com.tjb.lab.lab1.FirstStep;
+import com.tjb.lab.lab1.FourthStep;
+import com.tjb.lab.lab1.SecondStep;
+import com.tjb.lab.lab1.ThirdStep;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+public class Lab1Test {
+
+    @Autowired
+    FirstStep firstStep;
+
+    @Autowired
+    SecondStep secondStep;
+
+    @Autowired
+    ThirdStep thirdStep;
+
+    @Autowired
+    FourthStep fourthStep;
+
+    @Test
+    public void Lab1() {
+        firstStep.First();
+        secondStep.Second();
+        thirdStep.Third();
+        fourthStep.Fourth();
+    }
+}
+```
+最后的目录结构如下（自己可以调整，不是固定的）
+![](/img/in-post/2021-9-27-code-blog/2021-9-27-4.png)
+
+最后运行 Lab1Test 可以在控制台看到输出
+
+有什么问题可以在下方评论
