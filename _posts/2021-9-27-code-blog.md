@@ -6,7 +6,7 @@ author: "Tang Jibin"
 header-img: img/header/2021-9-27-code-blog.jpg #不需要加图片就用 header-img: text
 #header-img-credit: CG #在图片右下角加 credit
 header-mask: 0.5 #表示图片的阴影指数，只在标题加图片才需要
-hidden: true
+hidden: false
 mathjax: false
 mermaid: false
 tags:
