@@ -2,7 +2,6 @@
 title: CG Blog
 SEOTitle: 菜狗的博客 | CG Blog
 header-img: img/home-bg.jpg
-email: jibintang8@gmail.com
 description: "个人IT技术博客，和你一起学习"
 keyword: "学习, study, IT, computer, student, 大学生, tech, Blog, 湖南大学, HNU"
 url: "https://tjbnbb.github.io/"              # your host, for absolute URL
@@ -16,8 +15,9 @@ RSS: false
 weibo_username:     false
 zhihu_username:     rom-99-76
 github_username:    tjbnbb
-twitter_username:   tang_jibin
+twitter_username:   false
 facebook_username:  jibin.tang.1
+email_address: jibintang8@gmail.com
 #linkedin_username:  firstname-lastname-idxxxx
 
 
